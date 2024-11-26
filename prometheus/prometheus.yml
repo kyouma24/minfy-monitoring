@@ -1,11 +1,192 @@
 global:
-  scrape_interval: 30s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
-  evaluation_interval: 30s # Evaluate rules every 15 seconds. The default is every 1 minute.
+  scrape_interval: 10s
+  evaluation_interval: 10s
   external_labels:
-    moniter: main
-#rule_files:
-  # - EC2-alerts.yaml
+    client: <Account_Name>  # For identification purpose. All data will be written under this name
+
+remote_write:
+- url: "http://<insert_public_ip_here>:10908/api/v1/receive"   # To remote write from customer's account to our centralized server
+
 scrape_configs:
-  - job_name: "prometheus"
+  - job_name: "node-linux"                                    # Linux job
+    ec2_sd_configs: &ec2config
+      - region: "ap-south-1"
+    relabel_configs:
+      - source_labels: [__meta_ec2_tag_OS]
+        regex: linux
+        action: keep
+      - source_labels: [__meta_ec2_private_ip]
+        regex: '(.*)'
+        replacement: '${1}:1784'
+        target_label: __address__
+      - source_labels: [__meta_ec2_tag_Name]
+        target_label: instance_name
+      - target_label: "Organisation_Id"
+        replacement: "Org_Id"
+      - target_label: "raiseOnBehalfOf"
+        replacement: "ms-monitoring@minfytech.com"
+      - target_label: "IncidentTypeIdTI"
+        replacement: "4702"
+      - target_label: "IncidentTypeIdCI"
+        replacement: "4702"
+      - target_label: "serviceRequestTypeIdCU"
+        replacement: "4702"
+      - target_label: "JiraProjectIdTI"
+        replacement: "2113"
+      - target_label: "JiraProjectIdCI"
+        replacement: "2113"
+      - target_label: "JiraProjectIdCU"
+        replacement: "2113"
+      - target_label: "projectKeyTI"
+        replacement: "AT"
+      - target_label: "projectKeyCI"
+        replacement: "AT"
+      - target_label: "ProjectKeyCU"
+        replacement: "AT"
+      - target_label: "SearchInProjects"
+        replacement: "AT"
+      - target_label: "ClientName"
+        replacement: "Client_Name"
+      - target_label: "cust_email_id"
+        replacement: "email1, email2"
+
+
+#### Node-Windows ####
+  - job_name: "node-windows"
+    ec2_sd_configs: *ec2config
+    relabel_configs:
+      - source_labels: [__meta_ec2_tag_OS]
+        regex: windows
+        action: keep
+      - source_labels: [__meta_ec2_private_ip]
+        regex: '(.*)'
+        replacement: '${1}:9182'
+        target_label: __address__
+      - source_labels: [__meta_ec2_tag_Name]
+        target_label: instance_name
+      - target_label: "Organisation_Id"
+        replacement: "Org_Id"
+      - target_label: "raiseOnBehalfOf"
+        replacement: "ms-monitoring@minfytech.com"
+      - target_label: "IncidentTypeIdTI"
+        replacement: "4702"
+      - target_label: "IncidentTypeIdCI"
+        replacement: "4702"
+      - target_label: "serviceRequestTypeIdCU"
+        replacement: "4702"
+      - target_label: "JiraProjectIdTI"
+        replacement: "2113"
+      - target_label: "JiraProjectIdCI"
+        replacement: "2113"
+      - target_label: "JiraProjectIdCU"
+        replacement: "2113"
+      - target_label: "projectKeyTI"
+        replacement: "AT"
+      - target_label: "projectKeyCI"
+        replacement: "AT"
+      - target_label: "ProjectKeyCU"
+        replacement: "AT"
+      - target_label: "SearchInProjects"
+        replacement: "AT"
+      - target_label: "ClientName"
+        replacement: "Client_Name"
+      - target_label: "cust_email_id"
+        replacement: "email1, email2"
+
+#### YACE ####
+  - job_name: "yace"
     static_configs:
-      - targets: ["localhost:1783"]
+      - targets: ["<insert_private_ip_here>:8099"]
+    relabel_configs:
+      - target_label: "Organisation_Id"
+        replacement: "Org_Id"
+      - target_label: "raiseOnBehalfOf"
+        replacement: "ms-monitoring@minfytech.com"
+      - target_label: "IncidentTypeIdTI"
+        replacement: "4702"
+      - target_label: "IncidentTypeIdCI"
+        replacement: "4702"
+      - target_label: "serviceRequestTypeIdCU"
+        replacement: "4702"
+      - target_label: "JiraProjectIdTI"
+        replacement: "2113"
+      - target_label: "JiraProjectIdCI"
+        replacement: "2113"
+      - target_label: "JiraProjectIdCU"
+        replacement: "2113"
+      - target_label: "projectKeyTI"
+        replacement: "AT"
+      - target_label: "projectKeyCI"
+        replacement: "AT"
+      - target_label: "ProjectKeyCU"
+        replacement: "AT"
+      - target_label: "SearchInProjects"
+        replacement: "AT"
+      - target_label: "ClientName"
+        replacement: "Client_Name"
+      - target_label: "cust_email_id"
+        replacement: "email1, email2"
+
+### BlackBox ####
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]  # Look for a HTTP 200 response.
+    static_configs:
+      - targets:
+          - http://prometheus.io    # Target to probe with http.
+          - https://www.youtube.com/
+          - https://aws.amazon.com/
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: url
+      - target_label: __address__
+        replacement: blackbox:9115
+      - target_label: "Organisation_Id"
+        replacement: "Org_Id"
+      - target_label: "raiseOnBehalfOf"
+        replacement: "ms-monitoring@minfytech.com"
+      - target_label: "IncidentTypeIdTI"
+        replacement: "4702"
+      - target_label: "IncidentTypeIdCI"
+        replacement: "4702"
+      - target_label: "serviceRequestTypeIdCU"
+        replacement: "4702"
+      - target_label: "JiraProjectIdTI"
+        replacement: "2113"
+      - target_label: "JiraProjectIdCI"
+        replacement: "2113"
+      - target_label: "JiraProjectIdCU"
+        replacement: "2113"
+      - target_label: "projectKeyTI"
+        replacement: "AT"
+      - target_label: "projectKeyCI"
+        replacement: "AT"
+      - target_label: "ProjectKeyCU"
+        replacement: "AT"
+      - target_label: "SearchInProjects"
+        replacement: "AT"
+      - target_label: "ClientName"
+        replacement: "Client_Name"
+      - target_label: "cust_email_id"
+        replacement: "email1, email2"
+
+
+#### Blackbox Operational ####  
+  - job_name: 'blackbox_exporter'  #blackbox exporter's operational metrics.
+    static_configs:
+      - targets: ['127.0.0.1:9115']
+
+### Rule Files ####
+rule_files:
+  - "/etc/prometheus/EC2-Alerts.yml"
+  - "/etc/prometheus/RDS-Alerts.yml"
+  - "/etc/prometheus/URL-Alerts.yml"
+
+#### AlertManager ####
+alerting:
+  alertmanagers:
+    - static_configs:
+      - targets: ["<private_ip>:9093"]
