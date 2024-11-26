@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 30s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+  evaluation_interval: 30s # Evaluate rules every 15 seconds. The default is every 1 minute.
+  external_labels:
+    moniter: main
+#rule_files:
+  # - EC2-alerts.yaml
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:1783"]

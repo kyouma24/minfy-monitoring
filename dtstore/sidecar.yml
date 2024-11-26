@@ -1,0 +1,6 @@
+type: S3
+config:
+  bucket: "insert_s3_bucket_name_here"
+  endpoint: "insert_endpoint_here"
+  access_key: "ACCESS_KEY_ID"
+  secret_key: "SECRET_ACCESS_KEY_ID"

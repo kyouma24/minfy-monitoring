@@ -1,0 +1,94 @@
+# YACE config based on the tags provided to the services
+
+apiVersion: v1alpha1
+discovery:
+  jobs:
+    - type: AWS/S3
+      regions:
+        - us-east-1
+        - ap-southeast-2
+        - ap-south-1
+      roles:
+        - roleArn: "arn:aws:iam::NNNN:role/yace-assume-role"
+      searchTags: 
+        - key: Test
+          value: YACE
+      period: 86400
+      length: 604800
+      metrics:
+        - name: NumberOfObjects
+          statistics: 
+            - Sum
+        - name: BucketSizeBytes
+          statistics: 
+            - Average
+    - type: AWS/EC2
+      regions:
+        - ap-south-1
+      roles:
+        - roleArn: "arn:aws:iam::NNN:role/yace-assume-role"
+      searchTags: 
+        - key: Test
+          value: YACE
+      period: 300
+      length: 3600
+      metrics:
+        - name: CPUUtilization
+          statistics: [Average]
+        - name: NetworkIn
+          statistics: [Average, Sum]
+        - name: NetworkOut
+          statistics: [Average, Sum]
+        - name: NetworkPacketsIn
+          statistics: [Sum]
+        - name: NetworkPacketsOut
+          statistics: [Sum]
+        - name: StatusCheckFailed
+          statistics: [Sum]
+        - name: StatusCheckFailed_Instance
+          statistics: [Sum]
+        - name: StatusCheckFailed_System
+          statistics: [Sum]
+
+---
+
+apiVersion: v1alpha1
+sts-region: ap-south-1
+discovery:
+  jobs:
+    - type: AWS/RDS
+      regions:
+        - ap-south-1
+      period: 300
+      length: 86400
+      searchTags:
+        - key: Monitor-Name
+          value: UAT-RDS
+      dimensionNameRequirements: [DBInstanceIdentifier] # Absolutely important
+      metrics:
+        - name: CPUUtilization
+          statistics: [Average, Minimum, Maximum]
+        - name: DatabaseConnections
+          statistics: [Sum, Average, Minimum, Maximum]
+        - name: FreeableMemory
+          statistics: [Average, Minimum, Maximum]
+        - name: FreeStorageSpace
+          statistics: [Average, Minimum, Maximum]
+        - name: ReadThroughput
+          statistics: [Average, Maximum, Sum, Minimum]
+        - name: WriteThroughput
+          statistics: [Average, Maximum, Sum, Minimum]
+        - name: ReadIOPS
+          statistics: [Average, Maximum, Sum, Minimum]
+        - name: WriteIOPS
+          statistics: [Average, Maximum, Sum, Minimum]
+        - name: DBLoad
+          statistics: [Average, Maximum]
+        - name: DBLoadCPU
+          statistics: [Average, Maximum]
+        - name: CheckpointLag
+          statistics: [Average, Maximum, Minimum]
+        - name: ReadThroughput
+          statistics: [Maximum, Average]
+        - name: WriteThroughput
+          statistics: [Average, Maximum, Sum, Minimum]

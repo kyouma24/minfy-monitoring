@@ -1,0 +1,27 @@
+route:
+  group_by: ['alertname', 'job', 'instance', 'severity']
+  group_wait: 10s
+  group_interval: 1m
+  repeat_interval: 5h
+  receiver: 'Client_Name'
+  routes:
+  - receiver: 'Client_Name'
+    group_wait: 10s
+    matchers:
+    - ClientName="Client_Name"
+
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'trouble'
+    equal:
+      - alertname
+
+receivers:
+  - name: 'Client_Name'
+    webhook_configs:
+      - url: 'https://1iagdbxt8d.execute-api.ap-south-1.amazonaws.com/Prod/GraphanaWebhook'
+        http_config:
+          authorization:
+            credentials: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

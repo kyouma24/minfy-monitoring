@@ -1,0 +1,128 @@
+version: '3.8'
+networks:
+  monitoring:
+    driver: bridge
+volumes:
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+services:
+#### Prometheus ####
+  prometheus:
+    image: prom/prometheus:v2.37.9
+    container_name: prometheus
+    ports:
+      - 1783:9090
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+      - ./data:/prometheus/data/
+    restart: unless-stopped
+
+### BlackBox ####
+  blackbox:
+    image: prom/blackbox-exporter
+    volumes:
+      - ./blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml
+    command:
+      - '--config.file=/etc/blackbox_exporter/config.yml'
+    ports:
+      - '9115:9115'
+    restart: unless-stopped
+
+#### Grafana ####
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - '3000:3000'
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/custom.ini:/etc/grafana/grafana.ini
+      - ./grafana/defaults.ini:/usr/share/grafana/conf/defaults.ini
+    environment:
+      GF_RENDERING_SERVER_URL: http://renderer:8081/render
+      GF_RENDERING_CALLBACK_URL: http://grafana:3000/
+      GF_LOG_FILTERS: rendering:debug
+    restart: unless-stopped
+
+#### Grafana Renderer ####
+  renderer:
+    image: grafana/grafana-image-renderer:latest
+    ports:
+      - 8081
+    restart: unless-stopped
+
+#### ASCIIDoctor (for reports) ####
+  asciidoctor:
+    image: asciidoctor/docker-asciidoctor
+    container_name: asciidoctor
+    ports:
+      - "8815:8815"
+    hostname: asciidoctor
+    volumes:
+      - ./reportgen:/documents
+    command:
+      sh /documents/startup.sh
+    restart: unless-stopped
+
+#### Prometheus Sidecar #### 
+  prometheus-sidecar:
+    image: quay.io/thanos/thanos:v0.28.0
+    container_name: prometheus-sidecar
+    ports:
+      - "19090:19090"
+    network_mode: "host"
+    restart: unless-stopped  # automatically restart the container on failure
+    command:
+      - "sidecar"  # command to run
+      - "--http-address=0.0.0.0:19090"  # http address for the sidecar
+      - "--grpc-address=0.0.0.0:19190"  # grpc address for the sidecar
+      - "--prometheus.url=http://<private_ip>:1783"  # url of the main prometheus server
+
+### Thanos Query ####
+  thanos-query:
+    image: quay.io/thanos/thanos:v0.28.0
+    container_name: query
+    network_mode: "host"
+    restart: unless-stopped
+    command:
+      - "query"
+      - "--http-address=0.0.0.0:39090"
+      - "--store=0.0.0.0:10907"
+      - "--store=0.0.0.0:10903"
+
+#### Thanos Receiver ####
+  thanos-receive:
+    image: quay.io/thanos/thanos:v0.28.0
+    container_name: receive-1
+    network_mode: "host"
+    volumes:
+      - ./dtstore:/receive/data
+    restart: unless-stopped
+    command:
+      - "receive"
+      - "--tsdb.path=/receive/data"
+      - "--grpc-address=0.0.0.0:10907"
+      - "--http-address=0.0.0.0:10909"
+      - "--tsdb.retention=6h"
+      - "--label=receive_cluster=\"test\""
+      - "--objstore.config-file=/receive/data/sidecar.yml"
+      - "--remote-write.address=0.0.0.0:10908"
+
+#### Thanos Store GW ####
+  thanos-store-gw:
+     image: quay.io/thanos/thanos:v0.28.0
+     container_name: store
+     network_mode: "host"
+     restart: unless-stopped
+     volumes:
+      - ./dtstore:/receive/data
+     command:
+       - "store"
+       - "--objstore.config-file=/receive/data/sidecar.yml"
+       - "--http-address=0.0.0.0:10904"
+       - "--grpc-address=0.0.0.0:10903"
+
