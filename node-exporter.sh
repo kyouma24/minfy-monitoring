@@ -10,13 +10,26 @@ cat > /etc/systemd/system/node_exporter.service << "EOF"
 [Unit]
 Description=Node Exporter
 After=network.target
- 
+
 [Service]
 User=node_exporter
 Group=node_exporter
 Type=simple
-ExecStart=/usr/local/bin/node_exporter --web.listen-address=:1784
- 
+ExecStart=/usr/local/bin/node_exporter \
+  --collector.disable-defaults \
+  --collector.cpu \
+  --collector.meminfo \
+  --collector.diskstats \
+  --collector.filesystem \
+  --collector.netdev \
+  --collector.netstat \
+  --collector.loadavg \
+  --collector.stat \
+  --collector.time \
+  --collector.uname \
+  --collector.vmstat
+  --web.disable-exporter-metrics
+
 [Install]
 WantedBy=multi-user.target
 EOF
